@@ -17,6 +17,7 @@ class VertexAttributesBuilder {
 		
 		//Iterate through all the FloatX fields, defining getters and setters.
 		var attributeFieldNames:Array<String> = [];
+		var floatType:ComplexType = TPath({pack:[], name:"Float"});
 		var offset:Int = 0;
 		for(field in fields) {
 			var type:Null<ComplexType> = null;
@@ -34,9 +35,6 @@ class VertexAttributesBuilder {
 				switch(type) {
 					case TPath(p):
 						path = p;
-					case TExtend(p, fields):
-						trace(p);
-						trace(fields);
 					default:
 						//Nothing.
 				}
@@ -46,7 +44,7 @@ class VertexAttributesBuilder {
 			if(path != null && (path.pack.length == 0
 					|| path.pack.join(".") == "com.player03.vertexdata")) {
 				for(count in 1...5) {
-					if(path.name == 'Float$count') {
+					if(path.name == 'Attribute$count') {
 						floatCount = count;
 						attributeFieldNames.push(field.name);
 						break;
@@ -57,31 +55,85 @@ class VertexAttributesBuilder {
 			//If floatCount was set, the field represents an attribute
 			//and should be processed as such.
 			if(floatCount > 0) {
-				//Make it public, and associate a getter and setter.
+				//Make it public, associate a getter and setter, and
+				//change the type to Float if it's a scalar.
 				field.access = [APublic];
-				field.kind = FProp("get", "null", type);
+				field.kind = FProp("get", "set",
+					floatCount > 1 ? type : floatType);
 				
-				//The getter.
-				var getterBody:Expr = macro {
-					data.index = offset + $v{offset};
-					return data;
-				};
-				
-				fields.push({
-					name:"get_" + field.name,
-					pos:getterBody.pos,
-					access:[APrivate, AInline],
-					kind:FFun({
-						args:[],
-						ret:type,
-						params:[],
-						expr:getterBody
-					})
-				});
+				//Special case: return and set scalar values directly.
+				if(floatCount == 1) {
+					var getterBody:Expr = macro return array[offset + $v{offset}];
+					fields.push({
+						name:"get_" + field.name,
+						pos:getterBody.pos,
+						access:[APrivate, AInline],
+						kind:FFun({
+							args:[],
+							ret:floatType,
+							params:[],
+							expr:getterBody
+						})
+					});
+					
+					var setterBody:Expr = macro return array[offset + $v{offset}] = value;
+					fields.push({
+						name:"set_" + field.name,
+						pos:setterBody.pos,
+						access:[APrivate, AInline],
+						kind:FFun({
+							args:[{
+								name:"value",
+								type:floatType
+							}],
+							ret:floatType,
+							params:[],
+							expr:setterBody
+						})
+					});
+				} else {
+					var getterBody:Expr = macro
+						return new com.player03.vertexdata.Offset(array, offset + $v{offset});
+					fields.push({
+						name:"get_" + field.name,
+						pos:getterBody.pos,
+						access:[APrivate, AInline],
+						kind:FFun({
+							args:[],
+							ret:type,
+							params:[],
+							expr:getterBody
+						})
+					});
+					
+					var setterBody:Expr = macro {
+						for(i in 0...$v{floatCount}) {
+							array[offset + $v{offset} + i] = value[i];
+						}
+						return value;
+					};
+					fields.push({
+						name:"set_" + field.name,
+						pos:setterBody.pos,
+						access:[APrivate, AInline],
+						kind:FFun({
+							args:[{
+								name:"value",
+								type:type
+							}],
+							ret:type,
+							params:[],
+							expr:setterBody
+						})
+					});
+				}
 				
 				offset += floatCount;
 			}
 		}
+		
+		//Renaming for clarity.
+		var floatsPerVertex:Int = offset;
 		
 		//Remove the constructor, if it exists.
 		for(i in 0...fields.length) {
@@ -92,22 +144,18 @@ class VertexAttributesBuilder {
 		}
 		
 		//Add a custom constructor.
-		var constructorBody:Expr = macro {
-			super(data, $v{offset});
-		};
-		
+		var constructorBody:Expr = macro 
+			super(new com.player03.vertexdata.VertexDataArray(vertexCount * $v{floatsPerVertex}), $v{floatsPerVertex});
 		fields.push({
 			name:"new",
 			pos:constructorBody.pos,
 			access:[APublic],
 			kind:FFun({
 				args:[{
-					name:"data",
+					name:"vertexCount",
 					type:TPath({
-						pack:["com", "player03", "vertexdata"],
-						name:"VertexData",
-						params:[for(param in Context.getLocalClass().get().superClass.params)
-							TPType(Context.toComplexType(param))]
+						pack:[],
+						name:"Int"
 					})
 				}],
 				ret:null,
@@ -127,22 +175,20 @@ class VertexAttributesBuilder {
 		
 		if(!toStringExists) {
 			var toStringExprs:Array<Expr> = [
-				macro var string:StringBuf = new StringBuf()
+				macro var buffer:StringBuf = new StringBuf()
 			];
-			toStringExprs.push(macro string.add($v{className} + ":{"));
 			
 			var attributeName:String;
 			var first:Bool = true;
-			for(i in 0...attributeFieldNames.length - 1) {
+			for(i in 0...attributeFieldNames.length) {
 				attributeName = attributeFieldNames[i];
 				if(!first) {
-					toStringExprs.push(macro string.add(", "));
+					toStringExprs.push(macro buffer.add(", "));
 				}
-				toStringExprs.push(macro string.add($v{attributeName} + ":" + $i{attributeName}.toString()));
+				toStringExprs.push(macro buffer.add($v{attributeName} + ":" + $i{attributeName}));
 				first = false;
 			}
-			toStringExprs.push(macro string.add("}"));
-			toStringExprs.push(macro return string.toString());
+			toStringExprs.push(macro return "{" + buffer.toString() + "}");
 			var toStringBody:Expr = macro $b{toStringExprs};
 			
 			fields.push({
