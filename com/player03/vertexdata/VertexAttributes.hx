@@ -1,4 +1,5 @@
 package com.player03.vertexdata;
+
 import com.player03.vertexdata.Offset.ConcreteOffset;
 
 #if 0
@@ -51,10 +52,34 @@ class VertexAttributes extends ConcreteOffset {
 		return floatsRequired * 4;
 	}
 	
+	/**
+	 * Dynamically look up a scalar attribute.
+	 */
+	public function getAttribute1(name:String):Attribute1 {
+		return null; //Will be overridden by subclasses.
+	}
+	/**
+	 * Dynamically look up a 2-component attribute
+	 */
+	public function getAttribute2(name:String):Attribute2 {
+		return null;
+	}
+	/**
+	 * Dynamically look up a 3-component attribute
+	 */
+	public function getAttribute3(name:String):Attribute3 {
+		return null;
+	}
+	/**
+	 * Dynamically look up a 4-component attribute
+	 */
+	public function getAttribute4(name:String):Attribute4 {
+		return null;
+	}
+	
 	public inline function clone():VertexAttributes {
 		return new VertexAttributes(array, floatsRequired, offset);
 	}
-	
 	private inline function cloneWithOffset(offset:Int):VertexAttributes {
 		return new VertexAttributes(array, floatsRequired, offset);
 	}

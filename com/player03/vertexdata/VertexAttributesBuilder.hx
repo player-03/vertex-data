@@ -7,13 +7,14 @@ class VertexAttributesBuilder {
 	public static function build():Array<Field> {
 		var fields:Array<Field> = Context.getBuildFields();
 		
-		//This macro will be called for both the base class and subclasses,
-		//but it shouldn't modify the base class.
-		if(Context.getLocalClass().toString() == "com.player03.vertexdata.VertexAttributes") {
-			trace("main class");
-			return fields;
-		}
 		var className:String = Context.getLocalClass().get().name;
+		
+		/**
+		 * Attribute names, grouped by component count.
+		 */
+		var namesByComponentCount:Array<Array<String>> = [null, [], [], [], []];
+		
+		var offsetsByName:Map<String, Int> = new Map<String, Int>();
 		
 		//Iterate through all the FloatX fields, defining getters and setters.
 		var attributeFieldNames:Array<String> = [];
@@ -40,13 +41,15 @@ class VertexAttributesBuilder {
 				}
 			}
 			
-			var floatCount:Int = 0;
+			var componentCount:Int = 0;
 			if(path != null && (path.pack.length == 0
 					|| path.pack.join(".") == "com.player03.vertexdata")) {
 				for(count in 1...5) {
 					if(path.name == 'Attribute$count') {
-						floatCount = count;
+						componentCount = count;
 						attributeFieldNames.push(field.name);
+						namesByComponentCount[count].push(field.name);
+						offsetsByName[field.name] = offset;
 						break;
 					}
 				}
@@ -54,15 +57,15 @@ class VertexAttributesBuilder {
 			
 			//If floatCount was set, the field represents an attribute
 			//and should be processed as such.
-			if(floatCount > 0) {
+			if(componentCount > 0) {
 				//Make it public, associate a getter and setter, and
 				//change the type to Float if it's a scalar.
 				field.access = [APublic];
 				field.kind = FProp("get", "set",
-					floatCount > 1 ? type : floatType);
+					componentCount > 1 ? type : floatType);
 				
 				//Special case: return and set scalar values directly.
-				if(floatCount == 1) {
+				if(componentCount == 1) {
 					var getterBody:Expr = macro return array[offset + $v{offset}];
 					fields.push({
 						name:"get_" + field.name,
@@ -107,7 +110,7 @@ class VertexAttributesBuilder {
 					});
 					
 					var setterBody:Expr = macro {
-						for(i in 0...$v{floatCount}) {
+						for(i in 0...$v{componentCount}) {
 							array[offset + $v{offset} + i] = value[i];
 						}
 						return value;
@@ -128,8 +131,63 @@ class VertexAttributesBuilder {
 					});
 				}
 				
-				offset += floatCount;
+				offset += componentCount;
 			}
+		}
+		
+		//Add dynamic lookup functions. Note: this implementation is
+		//based on how Haxe looks up property/method names in C++.
+		for(i in 1...5) {
+			if(namesByComponentCount[i].length == 0) {
+				continue;
+			}
+			
+			namesByComponentCount[i].sort(lengthCompare);
+			
+			var getAttributeExprs:Array<Expr> = [];
+			
+			var currentNames:Array<String> = [];
+			var currentLength:Int = namesByComponentCount[i][0].length;
+			for(name in namesByComponentCount[i]) {
+				if(name.length == currentLength) {
+					//Gather all the names of the same length...
+					currentNames.push(name);
+				} else {
+					//...then add them all to the function.
+					addLookup(currentNames, currentLength, offsetsByName, getAttributeExprs);
+					
+					//Start again.
+					currentNames = [name];
+					currentLength = name.length;
+				}
+			}
+			if(currentNames.length > 0) {
+				addLookup(currentNames, currentLength, offsetsByName, getAttributeExprs);
+			}
+			getAttributeExprs.push(macro return null);
+			
+			var getAttributeBody:Expr = macro $b{getAttributeExprs};
+			
+			fields.push({
+				name:'getAttribute$i',
+				pos:getAttributeBody.pos,
+				access:[APublic, AOverride],
+				kind:FFun({
+					args:[{
+						name:"name",
+						type:TPath({
+							pack:[],
+							name:"String"
+						})
+					}],
+					ret:TPath({
+						pack:["com", "player03", "vertexdata"],
+						name:'Attribute$i'
+					}),
+					params:[],
+					expr:getAttributeBody
+				})
+			});
 		}
 		
 		//Renaming for clarity.
@@ -206,4 +264,24 @@ class VertexAttributesBuilder {
 		
 		return fields;
 	}
+	
+	#if macro
+	private static function lengthCompare(a:String, b:String):Int {
+		return a.length - b.length;
+	}
+	
+	private static function addLookup(names:Array<String>, nameLength:Int, offsetsByName:Map<String, Int>, functionBody:Array<Expr>):Void {
+		var lookupExprs:Array<Expr> = [];
+		for(name in names) {
+			var offset:Int = offsetsByName[name];
+			lookupExprs.push(macro
+				if(name == $v{name})
+					return new com.player03.vertexdata.Offset(array, offset + $v{offset}));
+		}
+		
+		functionBody.push(macro
+			if(name.length == $v{nameLength}) $b{lookupExprs});
+		
+	}
+	#end
 }

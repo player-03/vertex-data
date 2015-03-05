@@ -54,23 +54,24 @@ abstract Attribute4(Offset) from Offset {
 			| Std.int(b * 0xFF);
 	}
 	private inline function set_argb(value:Int):Int {
-		a = (value >> 24) / 0xFF;
+		a = (value >>> 24) / 0xFF;
 		r = ((value >> 16) & 0xFF) / 0xFF;
 		g = ((value >> 8) & 0xFF) / 0xFF;
 		b = (value & 0xFF) / 0xFF;
+		return value;
 	}
 	
 	public inline function setXYZW(x:Float, y:Float, z:Float, w:Float):Void {
-		this.x = x;
-		this.y = y;
-		this.z = z;
-		this.w = w;
+		set_x(x);
+		set_y(y);
+		set_z(z);
+		set_w(w);
 	}
 	public inline function setRGBA(r:Float, g:Float, b:Float, a:Float):Void {
-		this.r = r;
-		this.g = g;
-		this.b = b;
-		this.a = a;
+		set_r(r);
+		set_g(g);
+		set_b(b);
+		set_a(a);
 	}
 	
 	@:arrayAccess private inline function getFloat(index:Int):Float {
