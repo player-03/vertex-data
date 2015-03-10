@@ -5,7 +5,7 @@ package com.player03.vertexdata;
  * 
  * If you create a property of this type, it will be converted to a Float
  * at compile time. For instance, if you define "var alpha:Attribute1" in
- * your subclass of VertexAttributes, you'll be able to set it this way:
+ * your subclass of Vertex, you'll be able to set it this way:
  * 
  * vertices[0].alpha = 0.5;
  * 
@@ -14,14 +14,15 @@ package com.player03.vertexdata;
  * 
  * vertices[0].getAttribute1("alpha").value = 0.5
  */
-abstract Attribute1(Offset) from Offset {
+abstract Attribute1(Offset) from Offset to Offset {
 	public var value(get, set):Float;
 	
 	@:to private inline function get_value():Float {
 		return this[0];
 	}
 	private inline function set_value(value:Float):Float {
-		return this[0] = value;
+		this[0] = value;
+		return value;
 	}
 	
 	public inline function toString():String {

@@ -3,7 +3,7 @@ package com.player03.vertexdata;
 /**
  * An attribute containing 3 Float components.
  */
-abstract Attribute3(Offset) from Offset {
+abstract Attribute3(Offset) from Offset to Offset {
 	public var x(get, set):Float;
 	public var y(get, set):Float;
 	public var z(get, set):Float;

@@ -3,7 +3,7 @@ package com.player03.vertexdata;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 
-class VertexAttributesBuilder {
+class VertexBuilder {
 	public static function build():Array<Field> {
 		var fields:Array<Field> = Context.getBuildFields();
 		
@@ -79,7 +79,12 @@ class VertexAttributesBuilder {
 						})
 					});
 					
-					var setterBody:Expr = macro return array[offset + $v{offset}] = value;
+					var setterBody:Expr = macro {
+						//Combining this into one line can cause errors,
+						//presumably depending on the value of ComponentArray.
+						array[offset + $v{offset}] = value;
+						return value;
+					};
 					fields.push({
 						name:"set_" + field.name,
 						pos:setterBody.pos,
@@ -201,20 +206,64 @@ class VertexAttributesBuilder {
 			}
 		}
 		
+		//Add a static "cachedAttributes" variable.
+		fields.push({
+			name:"cachedAttributes",
+			pos:Context.currentPos(),
+			access:[APrivate, AStatic],
+			kind:FVar(TPath({
+				pack:[],
+				name:"Array",
+				params:[TPType(TPath({
+					pack:["com", "player03", "vertexdata"],
+					name:"AttributeDescription"
+				}))]
+			}))
+		});
+		
 		//Add a custom constructor.
-		var constructorBody:Expr = macro 
-			super(new com.player03.vertexdata.VertexDataArray(vertexCount * $v{floatsPerVertex}), $v{floatsPerVertex});
+		var constructorExprs:Array<Expr> = [
+			macro cachedAttributes = []
+		];
+		for(name in attributeFieldNames) {
+			var componentCount:Int = 0;
+			for(i in 1...5) {
+				if(namesByComponentCount[i].indexOf(name) >= 0) {
+					componentCount = i;
+					break;
+				}
+			}
+			if(componentCount > 0) {
+				constructorExprs.push(macro
+					cachedAttributes.push(new com.player03.vertexdata.AttributeDescription(
+						$v{name}, $v{componentCount})));
+			}
+		}
+		constructorExprs = [
+			macro if(cachedAttributes == null) $b{constructorExprs}
+		];
+		constructorExprs.push(macro
+			super(length, array, $v{floatsPerVertex}, cachedAttributes));
+		var constructorBody:Expr = macro $b{constructorExprs};
 		fields.push({
 			name:"new",
 			pos:constructorBody.pos,
 			access:[APublic],
 			kind:FFun({
 				args:[{
-					name:"vertexCount",
+					name:"length",
 					type:TPath({
 						pack:[],
 						name:"Int"
-					})
+					}),
+					opt:true
+				}, {
+					name:"array",
+					type:TPath({
+						pack:["com", "player03", "vertexdata"],
+						name:"ComponentArray"
+					}),
+					opt:true
 				}],
 				ret:null,
 				params:[],
@@ -262,10 +311,32 @@ class VertexAttributesBuilder {
 			});
 		}
 		
+		//Add an __init__ method that adds the components per vertex.
+		var qualifiedClassName:String = Context.getLocalClass().toString();
+		var initBody:Expr = macro {
+			if(com.player03.vertexdata.Vertex.componentsByClass == null) {
+				com.player03.vertexdata.Vertex.componentsByClass = new Map<String, Int>();
+			}
+			com.player03.vertexdata.Vertex.componentsByClass
+				[$v{qualifiedClassName}] = $v{floatsPerVertex};
+		};
+		fields.push({
+			name:"__init__",
+			pos:initBody.pos,
+			access:[APrivate, AStatic],
+			kind:FFun({
+				args:[],
+				ret:TPath({pack:[], name:"Void"}),
+				params:[],
+				expr:initBody
+			})
+		});
+		
 		return fields;
 	}
 	
 	#if macro
+	
 	private static function lengthCompare(a:String, b:String):Int {
 		return a.length - b.length;
 	}
@@ -281,7 +352,7 @@ class VertexAttributesBuilder {
 		
 		functionBody.push(macro
 			if(name.length == $v{nameLength}) $b{lookupExprs});
-		
 	}
+	
 	#end
 }

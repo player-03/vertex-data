@@ -9,7 +9,7 @@ import com.player03.vertexdata.Offset.ConcreteOffset;
  */
 @:forward
 abstract Offset(ConcreteOffset) from ConcreteOffset {
-	public inline function new(array:VertexDataArray, ?offset:Int = 0) {
+	public inline function new(array:ComponentArray, ?offset:Int = 0) {
 		this = new ConcreteOffset(array, offset);
 	}
 	
@@ -18,7 +18,8 @@ abstract Offset(ConcreteOffset) from ConcreteOffset {
 	}
 	
 	@:arrayAccess private inline function setFloat(index:Int, value:Float):Float {
-		return this.array[this.offset + index] = value;
+		this.array[this.offset + index] = value;
+		return value;
 	}
 	
 	public inline function clone():Offset {
@@ -30,10 +31,10 @@ abstract Offset(ConcreteOffset) from ConcreteOffset {
  * Because abstracts can't store two values at once.
  */
 class ConcreteOffset {
-	public var array:VertexDataArray;
+	public var array:ComponentArray;
 	public var offset:Int;
 	
-	public inline function new(array:VertexDataArray, ?offset:Int = 0) {
+	public inline function new(array:ComponentArray, ?offset:Int = 0) {
 		this.array = array;
 		this.offset = offset;
 	}

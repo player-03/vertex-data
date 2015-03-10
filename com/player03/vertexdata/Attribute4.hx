@@ -9,7 +9,7 @@ package com.player03.vertexdata;
  * setFloat() instead.
  */
 @:forward(getFloat, setFloat)
-abstract Attribute4(Offset) from Offset {
+abstract Attribute4(Offset) from Offset to Offset {
 	public var x(get, set):Float;
 	public var y(get, set):Float;
 	public var z(get, set):Float;
