@@ -23,9 +23,8 @@ This library is designed to help. Here's how you'd deal with the three-attribute
             //Allocate data representing 5 tiles.
             tileData = new VertexArray(5, MyTile);
             
-            //Place 5 different tiles at varying locations, each with a unique tileID.
+            //You can treat tileData as an array of MyTile objects...
             for(i in 0...5) {
-                //You can treat tileData as an array of MyTile objects...
                 tileData[i].position.x = i * 64;
                 tileData[i].position.y = i * 50;
                 tileData[i].tileID = i;
