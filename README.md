@@ -2,9 +2,9 @@
 
 If you work directly with OpenGL, Stage3D, or Tilesheet, you may be familiar with the need for [interleaved vertex data](http://iphonedevelopment.blogspot.com/2009/06/opengl-es-from-ground-up-part-8.html). For instance, Tilesheet "[expects a repeating set of three values: the X and Y coordinates, followed by the tileID that should be rendered](http://www.openfl.org/documentation/api/openfl/display/Tilesheet.html#drawTiles)."
 
-It can be annoying to manage that sort of array, especially seeing as the array may repeat after four, five, or even eleven values, depending on your use case. With all eleven attributes defined, the pattern is `[x, y, tileID, a, b, c, d, red, green, blue, alpha, x, y, tileID, a, b, c, d, red, green, blue, alpha, ...]`. Updating all that is [as tricky as it sounds](https://github.com/matthewswallace/openfl-tilelayer/blob/master/haxelib/aze/display/TileLayer.hx#L131).
+That's simple enough, but depending on your use case the array may repeat after four, five, or even eleven values. At eleven, the pattern is `[x, y, tileID, a, b, c, d, red, green, blue, alpha, x, y, tileID, a, b, c, d, red, green, blue, alpha, ...]`. Updating all that is [as tricky as it sounds](https://github.com/matthewswallace/openfl-tilelayer/blob/master/haxelib/aze/display/TileLayer.hx#L131).
 
-This library is designed to make it easier to modify this sort of array. Here's how you'd deal with the three-attribute case:
+This library is designed to help. Here's how you'd deal with the three-attribute case:
 
     class MyTile extends Vertex {
         public var position:Attribute2;
@@ -69,27 +69,32 @@ Now adding color and alpha to the mix:
             initTilesheet();
             
             tileData = new VertexArray(3, MyTile);
-            for(i in 0...3) {
-                tileData[i].position.x = i * 100;
-                tileData[i].position.y = 100;
-                tileData[i].tileID = i;
-                tileData[i].color.rgb = 0xFF9900;
-                tileData[i].alpha = 0.5;
+            for(tile in tileData) {
+                tile.position.x = 100;
+                tile.position.y = 100;
+                tile.tileID = 5;
+                tile.color.rgb = 0xFF9900;
+                tile.alpha = 0.5;
             }
+            
+            //You can modify specific values of specific tiles, if you like.
+            tileData[0].position.y = -1;
+            tileData[1].tileID = 6;
             
             //Alternate method of setting a color.
             tileData[2].color.r = 0;
             tileData[2].color.g = 1;
             tileData[2].color.b = 1;
             
-            trace(tileData); //[0, 100, 0, 1, 0.6, 0, 0.5, 100, 100, 1, 1, 0.6, 0, 0.5, 200, 100, 2, 0, 1, 1, 0.5]
-            
+            trace(tileData);
             for(tile in tileData) {
                 trace(tile);
             }
-            //{position:[0, 100], tileID:0, color:[1, 0.6, 0], alpha:0.5}
-            //{position:[100, 100], tileID:1, color:[1, 0.6, 0], alpha:0.5}
-            //{position:[200, 100], tileID:2, color:[0, 1, 1], alpha:0.5}
+            //Output:
+            //[100, -1, 5, 1, 0.6, 0, 0.5, 100, 100, 6, 1, 0.6, 0, 0.5, 100, 100, 5, 0, 1, 1, 0.5]
+            //{position:[-1, 100], tileID:5, color:[1, 0.6, 0], alpha:0.5}
+            //{position:[100, 100], tileID:6, color:[1, 0.6, 0], alpha:0.5}
+            //{position:[100, 100], tileID:5, color:[0, 1, 1], alpha:0.5}
             
             tilesheet.drawTiles(graphics, tileData.array, true, Tilesheet.TILE_RGB | Tilesheet.TILE_ALPHA, 3);
         }
