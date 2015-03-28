@@ -3,6 +3,7 @@ package com.player03.vertexdata;
 /**
  * An attribute containing two Float components.
  */
+@:forward(clone)
 abstract Attribute2(Offset) from Offset to Offset {
 	public var u(get, set):Float;
 	public var v(get, set):Float;

@@ -59,6 +59,14 @@ class Vertex extends ConcreteOffset {
 	 */
 	public var attributes(default, null):Array<AttributeDescription>;
 	
+	/**
+	 * An Offset object that can be updated and returned, allowing the
+	 * Vertex to avoid creating a new object every time an attribute is
+	 * accessed. Additionally, the array property will already have been
+	 * set, so only offsetToReturn.offset will need to be updated.
+	 */
+	private var offsetToReturn:Offset;
+	
 	private inline function new(?length:Int, ?array:ComponentArray, componentsPerVertex:Int, attributes:Array<AttributeDescription>, ?offset:Int = 0) {
 		if(array == null) {
 			if(length != null) {
@@ -72,6 +80,7 @@ class Vertex extends ConcreteOffset {
 		
 		this.componentsPerVertex = componentsPerVertex;
 		this.attributes = attributes;
+		offsetToReturn = new Offset(array);
 	}
 	
 	private inline function get_bytesPerVertex():Int {
@@ -85,6 +94,9 @@ class Vertex extends ConcreteOffset {
 	 * 
 	 * If you know the number of components at compile-time, use the
 	 * corresponding "getAttributeX" method instead.
+	 * 
+	 * This will invalidate the value returned by any previous call to a
+	 * getAttribute() function, unless you used clone() to make a copy.
 	 */
 	public function getAttribute(name:String):Offset {
 		var size:Int = 0;
@@ -109,25 +121,33 @@ class Vertex extends ConcreteOffset {
 	}
 	
 	/**
-	 * Dynamically look up a scalar attribute.
+	 * Dynamically look up a scalar attribute. This will invalidate the
+	 * value returned by any previous call to a getAttribute() function,
+	 * unless you used clone() to make a copy.
 	 */
 	public function getAttribute1(name:String):Attribute1 {
 		return null;
 	}
 	/**
-	 * Dynamically look up a 2-component attribute.
+	 * Dynamically look up a 2-component attribute. This will invalidate
+	 * the value returned by any previous call to a getAttribute()
+	 * function, unless you used clone() to make a copy.
 	 */
 	public function getAttribute2(name:String):Attribute2 {
 		return null;
 	}
 	/**
-	 * Dynamically look up a 3-component attribute.
+	 * Dynamically look up a 3-component attribute. This will invalidate
+	 * the value returned by any previous call to a getAttribute()
+	 * function, unless you used clone() to make a copy.
 	 */
 	public function getAttribute3(name:String):Attribute3 {
 		return null;
 	}
 	/**
-	 * Dynamically look up a 4-component attribute.
+	 * Dynamically look up a 4-component attribute. This will invalidate
+	 * the value returned by any previous call to a getAttribute()
+	 * function, unless you used clone() to make a copy.
 	 */
 	public function getAttribute4(name:String):Attribute4 {
 		return null;

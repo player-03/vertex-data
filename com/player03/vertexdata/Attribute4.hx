@@ -8,7 +8,7 @@ package com.player03.vertexdata;
  * used by GLSL. If you find it confusing, just use getFloat() and
  * setFloat() instead.
  */
-@:forward(getFloat, setFloat)
+@:forward(getFloat, setFloat, clone)
 abstract Attribute4(Offset) from Offset to Offset {
 	public var x(get, set):Float;
 	public var y(get, set):Float;

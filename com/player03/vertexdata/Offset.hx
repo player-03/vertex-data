@@ -1,5 +1,4 @@
 package com.player03.vertexdata;
-import com.player03.vertexdata.Offset.ConcreteOffset;
 
 /**
  * Represents an offset within an array, as if the previous

@@ -100,8 +100,10 @@ class VertexBuilder {
 						})
 					});
 				} else {
-					var getterBody:Expr = macro
-						return new com.player03.vertexdata.Offset(array, offset + $v{offset});
+					var getterBody:Expr = macro {
+						offsetToReturn.offset = offset + $v{offset};
+						return offsetToReturn;
+					};
 					fields.push({
 						name:"get_" + field.name,
 						pos:getterBody.pos,
@@ -346,8 +348,10 @@ class VertexBuilder {
 		for(name in names) {
 			var offset:Int = offsetsByName[name];
 			lookupExprs.push(macro
-				if(name == $v{name})
-					return new com.player03.vertexdata.Offset(array, offset + $v{offset}));
+				if(name == $v{name}) {
+					offsetToReturn.offset = offset + $v{offset};
+					return offsetToReturn;
+				});
 		}
 		
 		functionBody.push(macro

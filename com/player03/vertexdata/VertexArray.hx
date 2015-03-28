@@ -52,43 +52,35 @@ abstract VertexArray<T:Vertex>(T) {
 	}
 	
 	public inline function iterator():Iterator<T> {
-		return new VertexIterator(cast this, get_vertexCount());
+		return new VertexIterator(cast this);
 	}
 	
 	/**
-	 * Returns the named attribute for each vertex in this array.
+	 * Returns the named attribute for each vertex in this array. By
+	 * default, it iterates over Offset objects, but you may cast them
+	 * to Attribute1, Attribute2, Attribute3, or Attribute4. (If you do,
+	 * it's your responsibility to make sure you cast them to the correct
+	 * type.)
+	 * 
+	 * Also, it actually only iterates over a single Offset object. If
+	 * you want to save the value at any one index, use the clone() method.
+	 * 
+	 * Bonus: you can store the AttributeIterator object and use the get()
+	 * method to get the attribute at a specific index.
 	 */
-	public function attributeIterator(attributeName:String):Iterator<Offset> {
-		var size:Int = 0;
-		for(i in 0...this.attributes.length) {
-			if(this.attributes[i].name == attributeName) {
-				size = this.attributes[i].size;
-				break;
-			}
-		}
-		switch(size) {
-			case 1:
-				return new Attribute1Iterator(cast this, attributeName, get_vertexCount());
-			case 2:
-				return new Attribute2Iterator(cast this, attributeName, get_vertexCount());
-			case 3:
-				return new Attribute3Iterator(cast this, attributeName, get_vertexCount());
-			case 4:
-				return new Attribute4Iterator(cast this, attributeName, get_vertexCount());
-			default:
-				return null;
-		}
+	public function attributeIterator(attributeName:String):AttributeIterator {
+		return new AttributeIterator(cast this, attributeName);
 	}
 }
 
-class VertexIterator<T:Vertex> {
+private class VertexIterator<T:Vertex> {
 	private var vertices:VertexArray<T>;
 	private var index:Int = 0;
 	private var length:Int;
 	
-	public function new(vertices:VertexArray<T>, length:Int) {
+	public function new(vertices:VertexArray<T>) {
 		this.vertices = vertices;
-		this.length = length;
+		length = vertices.vertexCount;
 	}
 	
 	public function hasNext():Bool {
@@ -105,70 +97,95 @@ class AttributeIterator {
 	private var attributeName:String;
 	private var index:Int = 0;
 	private var length:Int;
+	private var offsetWithinVertex:Int;
+	private var offsetToReturn:Offset;
 	
-	public function new(vertices:VertexArray<Vertex>, attributeName:String, length:Int) {
+	public function new(vertices:VertexArray<Vertex>, attributeName:String) {
 		this.vertices = vertices;
 		this.attributeName = attributeName;
-		this.length = length;
+		length = vertices.vertexCount;
+		
+		//Store the Offset object for later reuse.
+		offsetToReturn = vertices[0].getAttribute(attributeName);
+		
+		//Because vertices[0] has an offset of 0, this value is equal to
+		//the offset of the attribute.
+		offsetWithinVertex = offsetToReturn.offset;
 	}
 	
 	public inline function hasNext():Bool {
 		return index < length;
 	}
-}
-
-class Attribute1Iterator extends AttributeIterator {
+	
 	/**
 	 * Bonus functionality: returns the attribute for the given vertex.
 	 * Does not interfere with iteration.
 	 */
-	public inline function get(index:Int):Attribute1 {
-		return vertices[index++].getAttribute1(attributeName);
+	public inline function get(index:Int):Offset {
+		offsetToReturn.offset = vertices[index].offset + offsetWithinVertex;
+		return offsetToReturn;
+	}
+	
+	public inline function next():Offset {
+		return get(index++);
+	}
+}
+
+//Use these abstracts to automatically cast AttributeIterator's return values:
+
+@:forward(hasNext)
+abstract Attribute1Iterator(AttributeIterator) from AttributeIterator {
+	public inline function new(vertices:VertexArray<Vertex>, attributeName:String) {
+		this = new AttributeIterator(vertices, attributeName);
+	}
+	
+	@:arrayAccess public inline function get(index:Int):Attribute1 {
+		return this.get(index);
 	}
 	
 	public inline function next():Attribute1 {
-		return vertices[index++].getAttribute1(attributeName);
+		return this.next();
 	}
 }
-
-class Attribute2Iterator extends AttributeIterator {
-	/**
-	 * Bonus functionality: returns the attribute for the given vertex.
-	 * Does not interfere with iteration.
-	 */
-	public inline function get(index:Int):Attribute2 {
-		return vertices[index++].getAttribute2(attributeName);
+@:forward(hasNext)
+abstract Attribute2Iterator(AttributeIterator) from AttributeIterator {
+	public inline function new(vertices:VertexArray<Vertex>, attributeName:String) {
+		this = new AttributeIterator(vertices, attributeName);
+	}
+	
+	@:arrayAccess public inline function get(index:Int):Attribute2 {
+		return this.get(index);
 	}
 	
 	public inline function next():Attribute2 {
-		return vertices[index++].getAttribute2(attributeName);
+		return this.next();
 	}
 }
-
-class Attribute3Iterator extends AttributeIterator {
-	/**
-	 * Bonus functionality: returns the attribute for the given vertex.
-	 * Does not interfere with iteration.
-	 */
-	public inline function get(index:Int):Attribute3 {
-		return vertices[index++].getAttribute3(attributeName);
+@:forward(hasNext)
+abstract Attribute3Iterator(AttributeIterator) from AttributeIterator {
+	public inline function new(vertices:VertexArray<Vertex>, attributeName:String) {
+		this = new AttributeIterator(vertices, attributeName);
+	}
+	
+	@:arrayAccess public inline function get(index:Int):Attribute3 {
+		return this.get(index);
 	}
 	
 	public inline function next():Attribute3 {
-		return vertices[index++].getAttribute3(attributeName);
+		return this.next();
 	}
 }
-
-class Attribute4Iterator extends AttributeIterator {
-	/**
-	 * Bonus functionality: returns the attribute for the given vertex.
-	 * Does not interfere with iteration.
-	 */
-	public inline function get(index:Int):Attribute4 {
-		return vertices[index++].getAttribute4(attributeName);
+@:forward(hasNext)
+abstract Attribute4Iterator(AttributeIterator) from AttributeIterator {
+	public inline function new(vertices:VertexArray<Vertex>, attributeName:String) {
+		this = new AttributeIterator(vertices, attributeName);
+	}
+	
+	@:arrayAccess public inline function get(index:Int):Attribute4 {
+		return this.get(index);
 	}
 	
 	public inline function next():Attribute4 {
-		return vertices[index++].getAttribute4(attributeName);
+		return this.next();
 	}
 }

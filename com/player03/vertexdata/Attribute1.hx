@@ -14,6 +14,7 @@ package com.player03.vertexdata;
  * 
  * vertices[0].getAttribute1("alpha").value = 0.5
  */
+@:forward(clone)
 abstract Attribute1(Offset) from Offset to Offset {
 	public var value(get, set):Float;
 	
