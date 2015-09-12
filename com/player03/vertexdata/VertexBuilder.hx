@@ -16,7 +16,7 @@ class VertexBuilder {
 		
 		var offsetsByName:Map<String, Int> = new Map<String, Int>();
 		
-		//Iterate through all the FloatX fields, defining getters and setters.
+		//Iterate through all the AttributeX fields, defining getters and setters.
 		var attributeFieldNames:Array<String> = [];
 		var floatType:ComplexType = TPath({pack:[], name:"Float"});
 		var offset:Int = 0;

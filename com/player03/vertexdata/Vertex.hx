@@ -31,7 +31,7 @@ class MyVertex extends Vertex {
 //vertices[2].color.rgb = 0x33FF66;
 #end
 
-@:autoBuild(com.player03.vertexdata.VertexBuilder.build())
+@:autoBuild(com.player03.vertexdata.VertexBuilder.build()) @:keepSub
 class Vertex extends ConcreteOffset {
 	private static var componentsByClass:Map<String, Int>;
 	
