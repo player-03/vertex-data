@@ -129,6 +129,10 @@ class AttributeIterator {
 	public inline function next():Offset {
 		return get(index++);
 	}
+	
+	public inline function iterator():AttributeIterator {
+		return this;
+	}
 }
 
 //Use these abstracts to automatically cast AttributeIterator's return values:
@@ -146,6 +150,10 @@ abstract Attribute1Iterator(AttributeIterator) from AttributeIterator {
 	public inline function next():Attribute1 {
 		return this.next();
 	}
+	
+	public inline function iterator():Attribute1Iterator {
+		return this;
+	}
 }
 @:forward(hasNext)
 abstract Attribute2Iterator(AttributeIterator) from AttributeIterator {
@@ -159,6 +167,10 @@ abstract Attribute2Iterator(AttributeIterator) from AttributeIterator {
 	
 	public inline function next():Attribute2 {
 		return this.next();
+	}
+	
+	public inline function iterator():Attribute2Iterator {
+		return this;
 	}
 }
 @:forward(hasNext)
@@ -174,6 +186,10 @@ abstract Attribute3Iterator(AttributeIterator) from AttributeIterator {
 	public inline function next():Attribute3 {
 		return this.next();
 	}
+	
+	public inline function iterator():Attribute3Iterator {
+		return this;
+	}
 }
 @:forward(hasNext)
 abstract Attribute4Iterator(AttributeIterator) from AttributeIterator {
@@ -187,5 +203,9 @@ abstract Attribute4Iterator(AttributeIterator) from AttributeIterator {
 	
 	public inline function next():Attribute4 {
 		return this.next();
+	}
+	
+	public inline function iterator():Attribute4Iterator {
+		return this;
 	}
 }
