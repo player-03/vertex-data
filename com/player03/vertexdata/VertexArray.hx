@@ -1,7 +1,7 @@
 package com.player03.vertexdata;
 
 @:forward(bytesPerVertex, componentsPerVertex, attributes, array)
-abstract VertexArray<T:Vertex>(T) {
+abstract VertexArray(Vertex) {
 	/**
 	 * The number of vertices in this array.
 	 */
@@ -12,18 +12,18 @@ abstract VertexArray<T:Vertex>(T) {
 	 */
 	public var componentCount(get, never):Int;
 	
-	public inline function new(?length:Int, ?array:ComponentArray, vertexClass:Class<T>) {
+	public inline function new(vertexClass:Class<Vertex>, ?length:Int, ?array:ComponentArray) {
 		this = Type.createInstance(vertexClass, [length, array]);
 	}
 	
 	private inline function get_vertexCount():Int {
 		return Std.int(this.array.length / this.componentsPerVertex);
 	}
-	@:arrayAccess private inline function get(index:Int):T {
+	@:arrayAccess private inline function get(index:Int):Vertex {
 		this.offset = this.componentsPerVertex * index;
 		return this;
 	}
-	@:arrayAccess private inline function set(index:Int, value:T):Void {
+	@:arrayAccess private inline function set(index:Int, value:Vertex):Void {
 		index *= this.componentsPerVertex;
 		for(i in 0...this.componentsPerVertex) {
 			setComponent(index + i, value.array[value.offset + i]);
@@ -51,7 +51,7 @@ abstract VertexArray<T:Vertex>(T) {
 		return "[" + buffer.toString() + "]";
 	}
 	
-	public inline function iterator():Iterator<T> {
+	public inline function iterator():Iterator<Vertex> {
 		return new VertexIterator(cast this);
 	}
 	
@@ -73,12 +73,12 @@ abstract VertexArray<T:Vertex>(T) {
 	}
 }
 
-private class VertexIterator<T:Vertex> {
-	private var vertices:VertexArray<T>;
+private class VertexIterator {
+	private var vertices:VertexArray;
 	private var index:Int = 0;
 	private var length:Int;
 	
-	public function new(vertices:VertexArray<T>) {
+	public function new(vertices:VertexArray) {
 		this.vertices = vertices;
 		length = vertices.vertexCount;
 	}
@@ -87,20 +87,20 @@ private class VertexIterator<T:Vertex> {
 		return index < length;
 	}
 	
-	public function next():T {
+	public function next():Vertex {
 		return vertices[index++];
 	}
 }
 
 class AttributeIterator {
-	private var vertices:VertexArray<Vertex>;
+	private var vertices:VertexArray;
 	private var attributeName:String;
 	private var index:Int = 0;
 	private var length:Int;
 	private var offsetWithinVertex:Int;
 	private var offsetToReturn:Offset;
 	
-	public function new(vertices:VertexArray<Vertex>, attributeName:String) {
+	public function new(vertices:VertexArray, attributeName:String) {
 		this.vertices = vertices;
 		this.attributeName = attributeName;
 		length = vertices.vertexCount;
@@ -139,7 +139,7 @@ class AttributeIterator {
 
 @:forward(hasNext)
 abstract Attribute1Iterator(AttributeIterator) from AttributeIterator {
-	public inline function new(vertices:VertexArray<Vertex>, attributeName:String) {
+	public inline function new(vertices:VertexArray, attributeName:String) {
 		this = new AttributeIterator(vertices, attributeName);
 	}
 	
@@ -157,7 +157,7 @@ abstract Attribute1Iterator(AttributeIterator) from AttributeIterator {
 }
 @:forward(hasNext)
 abstract Attribute2Iterator(AttributeIterator) from AttributeIterator {
-	public inline function new(vertices:VertexArray<Vertex>, attributeName:String) {
+	public inline function new(vertices:VertexArray, attributeName:String) {
 		this = new AttributeIterator(vertices, attributeName);
 	}
 	
@@ -175,7 +175,7 @@ abstract Attribute2Iterator(AttributeIterator) from AttributeIterator {
 }
 @:forward(hasNext)
 abstract Attribute3Iterator(AttributeIterator) from AttributeIterator {
-	public inline function new(vertices:VertexArray<Vertex>, attributeName:String) {
+	public inline function new(vertices:VertexArray, attributeName:String) {
 		this = new AttributeIterator(vertices, attributeName);
 	}
 	
@@ -193,7 +193,7 @@ abstract Attribute3Iterator(AttributeIterator) from AttributeIterator {
 }
 @:forward(hasNext)
 abstract Attribute4Iterator(AttributeIterator) from AttributeIterator {
-	public inline function new(vertices:VertexArray<Vertex>, attributeName:String) {
+	public inline function new(vertices:VertexArray, attributeName:String) {
 		this = new AttributeIterator(vertices, attributeName);
 	}
 	
