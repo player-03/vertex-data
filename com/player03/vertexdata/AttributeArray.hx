@@ -50,7 +50,7 @@ private class AttributeIterator {
 	}
 	
 	public inline function next():Attribute {
-		return array[index];
+		return array[index++];
 	}
 }
 
@@ -77,7 +77,7 @@ private class Attribute1Iterator {
 	}
 	
 	public inline function next():Attribute1 {
-		return array[index];
+		return array[index++];
 	}
 }
 
@@ -104,7 +104,7 @@ private class Attribute2Iterator {
 	}
 	
 	public inline function next():Attribute2 {
-		return array[index];
+		return array[index++];
 	}
 }
 
@@ -131,7 +131,7 @@ private class Attribute3Iterator {
 	}
 	
 	public inline function next():Attribute3 {
-		return array[index];
+		return array[index++];
 	}
 }
 
@@ -158,6 +158,6 @@ private class Attribute4Iterator {
 	}
 	
 	public inline function next():Attribute4 {
-		return array[index];
+		return array[index++];
 	}
 }

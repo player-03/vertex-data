@@ -47,7 +47,7 @@ class VertexArrayBuilder {
 					
 					//Record the data for later.
 					var size:Int = Std.parseInt(nameMatcher.matched(1));
-					constructorExprs.push(macro $i{name} = attributes[$v{name}]);
+					constructorExprs.push(macro $i{field.name} = attributes[$v{name}]);
 					vertexDefinition.push(macro {name:$v{name}, size:$v{size}});
 				#end
 				
