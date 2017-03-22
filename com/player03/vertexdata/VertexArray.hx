@@ -1,75 +1,111 @@
 package com.player03.vertexdata;
 
-@:forward(bytesPerVertex, componentsPerVertex, attributes, array)
-abstract VertexArray(Vertex) {
+import com.player03.vertexdata.Attribute;
+import com.player03.vertexdata.AttributeArray.AttributeArrayImpl;
+
+@:autoBuild(com.player03.vertexdata.VertexArrayBuilder.build())
+class VertexArray {
 	/**
 	 * The number of vertices in this array.
 	 */
-	public var vertexCount(get, never):Int;
+	public var length(get, never):Int;
 	
 	/**
 	 * The number of components in all the vertices in this array.
 	 */
 	public var componentCount(get, never):Int;
 	
-	public inline function new(vertexClass:Class<Vertex>, ?length:Int, ?array:ComponentArray) {
-		this = Type.createInstance(vertexClass, [length, array]);
-	}
+	/**
+	 * The number of bytes required to fully define a single vertex.
+	 */
+	public var bytesPerVertex(get, never):Int;
 	
-	private inline function get_vertexCount():Int {
-		return Std.int(this.array.length / this.componentsPerVertex);
-	}
-	@:arrayAccess private inline function get(index:Int):Vertex {
-		this.offset = this.componentsPerVertex * index;
-		return this;
-	}
-	@:arrayAccess private inline function set(index:Int, value:Vertex):Void {
-		index *= this.componentsPerVertex;
-		for(i in 0...this.componentsPerVertex) {
-			setComponent(index + i, value.array[value.offset + i]);
+	/**
+	 * The number of 32-bit floats required to fully define a single vertex.
+	 */
+	public var componentsPerVertex(default, null):Int;
+	
+	/**
+	 * A list of the attributes used by this vertex, in the correct order.
+	 */
+	public var definition(default, null):VertexDefinition;
+	
+	public var attributes(default, null):Map<String, AttributeArray>;
+	
+	public var data(default, null):Data;
+	
+	public function new(?length:Int, ?data:Data, definition:VertexDefinition) {
+		componentsPerVertex = definition.totalSize;
+		
+		if(data == null) {
+			if(length != null) {
+				data = new Data(length * componentsPerVertex);
+			} else {
+				throw "You must specify either a length or an array!";
+			}
+		}
+		
+		this.data = data;
+		this.definition = definition;
+		
+		attributes = new Map();
+		var offset:Int = 0;
+		for(d in definition) {
+			attributes[d.name] = new AttributeArray(data, offset, componentsPerVertex, length);
+			offset += d.size;
 		}
 	}
 	
+	private inline function get_bytesPerVertex():Int {
+		return componentsPerVertex * 4;
+	}
+	
+	public inline function hasAttribute(name:String):Bool {
+		return attributes.exists(name);
+	}
+	
+	private inline function get_length():Int {
+		return Std.int(data.length / componentsPerVertex);
+	}
+	
+	public function getVertex(index:Int):Vertex {
+		for(d in definition) {
+			attributes[d.name][index];
+		}
+		return this;
+	}
+	
+	public inline function getAttribute(name:String, index:Int):Attribute {
+		return attributes[name][index];
+	}
+	
 	private inline function get_componentCount():Int {
-		return this.array.length;
+		return data.length;
 	}
 	public inline function getComponent(index:Int):Float {
-		return this.array[index];
+		return data[index];
 	}
 	public inline function setComponent(index:Int, value:Float):Float {
-		return this.array[index] = value;
+		return data[index] = value;
 	}
 	
 	public inline function toString():String {
 		var buffer:StringBuf = new StringBuf();
-		for(i in 0...this.array.length) {
+		for(i in 0...data.length) {
 			if(i > 0) {
 				buffer.add(", ");
 			}
-			buffer.add(this.array[i]);
+			buffer.add(data[i]);
 		}
 		return "[" + buffer.toString() + "]";
 	}
 	
 	public inline function iterator():Iterator<Vertex> {
-		return new VertexIterator(cast this);
+		return new VertexIterator(this);
 	}
 	
-	/**
-	 * Returns the named attribute for each vertex in this array. By
-	 * default, it iterates over Offset objects, but you may cast them
-	 * to Attribute1, Attribute2, Attribute3, or Attribute4. (If you do,
-	 * it's your responsibility to make sure you cast them to the correct
-	 * type.)
-	 * 
-	 * Also, it actually only iterates over a single Offset object. If
-	 * you want to save the value at any one index, use the clone() method.
-	 * 
-	 * Bonus: you can store the AttributeIterator object and use the get()
-	 * method to get the attribute at a specific index.
-	 */
-	public function attributeIterator(attributeName:String):AttributeIterator {
-		return new AttributeIterator(cast this, attributeName);
+	public inline function clone():VertexArray {
+		return new VertexArray(data, definition);
 	}
 }
 
@@ -80,7 +116,7 @@ private class VertexIterator {
 	
 	public function new(vertices:VertexArray) {
 		this.vertices = vertices;
-		length = vertices.vertexCount;
+		length = vertices.length;
 	}
 	
 	public function hasNext():Bool {
@@ -88,124 +124,13 @@ private class VertexIterator {
 	}
 	
 	public function next():Vertex {
-		return vertices[index++];
+		return vertices.getVertex(index++);
 	}
 }
 
-class AttributeIterator {
-	private var vertices:VertexArray;
-	private var attributeName:String;
-	private var index:Int = 0;
-	private var length:Int;
-	private var offsetWithinVertex:Int;
-	private var offsetToReturn:Offset;
-	
-	public function new(vertices:VertexArray, attributeName:String) {
-		this.vertices = vertices;
-		this.attributeName = attributeName;
-		length = vertices.vertexCount;
-		
-		//Store the Offset object for later reuse.
-		offsetToReturn = vertices[0].getAttribute(attributeName);
-		
-		//Because vertices[0] has an offset of 0, this value is equal to
-		//the offset of the attribute.
-		offsetWithinVertex = offsetToReturn.offset;
-	}
-	
-	public inline function hasNext():Bool {
-		return index < length;
-	}
-	
-	/**
-	 * Bonus functionality: returns the attribute for the given vertex.
-	 * Does not interfere with iteration.
-	 */
-	public inline function get(index:Int):Offset {
-		offsetToReturn.offset = vertices[index].offset + offsetWithinVertex;
-		return offsetToReturn;
-	}
-	
-	public inline function next():Offset {
-		return get(index++);
-	}
-	
-	public inline function iterator():AttributeIterator {
-		return this;
-	}
-}
-
-//Use these abstracts to automatically cast AttributeIterator's return values:
-
-@:forward(hasNext)
-abstract Attribute1Iterator(AttributeIterator) from AttributeIterator {
-	public inline function new(vertices:VertexArray, attributeName:String) {
-		this = new AttributeIterator(vertices, attributeName);
-	}
-	
-	@:arrayAccess public inline function get(index:Int):Attribute1 {
-		return this.get(index);
-	}
-	
-	public inline function next():Attribute1 {
-		return this.next();
-	}
-	
-	public inline function iterator():Attribute1Iterator {
-		return this;
-	}
-}
-@:forward(hasNext)
-abstract Attribute2Iterator(AttributeIterator) from AttributeIterator {
-	public inline function new(vertices:VertexArray, attributeName:String) {
-		this = new AttributeIterator(vertices, attributeName);
-	}
-	
-	@:arrayAccess public inline function get(index:Int):Attribute2 {
-		return this.get(index);
-	}
-	
-	public inline function next():Attribute2 {
-		return this.next();
-	}
-	
-	public inline function iterator():Attribute2Iterator {
-		return this;
-	}
-}
-@:forward(hasNext)
-abstract Attribute3Iterator(AttributeIterator) from AttributeIterator {
-	public inline function new(vertices:VertexArray, attributeName:String) {
-		this = new AttributeIterator(vertices, attributeName);
-	}
-	
-	@:arrayAccess public inline function get(index:Int):Attribute3 {
-		return this.get(index);
-	}
-	
-	public inline function next():Attribute3 {
-		return this.next();
-	}
-	
-	public inline function iterator():Attribute3Iterator {
-		return this;
-	}
-}
-@:forward(hasNext)
-abstract Attribute4Iterator(AttributeIterator) from AttributeIterator {
-	public inline function new(vertices:VertexArray, attributeName:String) {
-		this = new AttributeIterator(vertices, attributeName);
-	}
-	
-	@:arrayAccess public inline function get(index:Int):Attribute4 {
-		return this.get(index);
-	}
-	
-	public inline function next():Attribute4 {
-		return this.next();
-	}
-	
-	public inline function iterator():Attribute4Iterator {
-		return this;
+abstract Vertex(VertexArray) from VertexArray {
+	@:arrayAccess
+	public inline function get(name:String):Attribute {
+		return (cast this.attributes[name]:AttributeArrayImpl).attribute;
 	}
 }
