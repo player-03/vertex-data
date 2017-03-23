@@ -56,8 +56,12 @@ private class AttributeIterator {
 
 @:forward(clone, length)
 abstract Attribute1Array(AttributeArray) from AttributeArray {
-	@:arrayAccess private inline function get(index:Int):Attribute1 {
-		return this[index];
+	@:arrayAccess private inline function get(index:Int):Float {
+		return this[index][0];
+	}
+	
+	@:arrayAccess private inline function set(index:Int, value:Float):Float {
+		return this[index][0] = value;
 	}
 	
 	public inline function iterator():Attribute1Iterator {
