@@ -65,14 +65,14 @@ abstract Attribute1Array(AttributeArray) from AttributeArray {
 	}
 	
 	public inline function iterator():Attribute1Iterator {
-		return new Attribute1Iterator(this);
+		return new Attribute1Iterator(cast this);
 	}
 }
 private class Attribute1Iterator {
-	public var array:Attribute1Array;
+	public var array:AttributeArray;
 	public var index:Int = 0;
 	
-	public inline function new(array:Attribute1Array) {
+	public inline function new(array:AttributeArray) {
 		this.array = array;
 	}
 	
